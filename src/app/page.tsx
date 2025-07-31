@@ -1,23 +1,47 @@
-import { Client } from "@gradio/client";
+"use client";
+import { GenerateTTS } from "@/action/tts";
+import React, { useState } from "react";
 
-export default async function Home() {
-  const client = await Client.connect("NihalGazi/Text-To-Speech-Unlimited");
-  const result = await client.predict("/text_to_speech_app", {
-    prompt:
-      "Enter text, choose a voice and emotion, and generate audio. The text will be checked for appropriateness before generation. Use it as much as you want.",
-    voice: "alloy",
-    emotion: "neutral", // sad excited clam
-    use_random_seed: false,
-    specific_seed: 12345,
-  });
+function Page() {
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [generatedAudios, setGeneratedAudios] = useState<string[]>([]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const audio = ((result.data as any)[0] as any).url;
+  const genAudio = async () => {
+    try {
+      if (loading) return;
+      setLoading(true);
+
+      const { audio } = await GenerateTTS(prompt);
+
+      setGeneratedAudios((prev) => [...prev, audio]);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
-      <audio src={audio} controls></audio>
-      {audio}
+      <textarea
+        placeholder="Enter prompt"
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+      />
+      <button disabled={loading} onClick={genAudio}>
+        Generate {loading && "loading"}
+      </button>
+
+      <div>
+        {generatedAudios.map((audio) => (
+          <div key={audio}>
+            <audio src={audio} controls />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+export default Page;
